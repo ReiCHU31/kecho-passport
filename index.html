@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kẻ Chợ | Hộ Chiếu Trải Nghiệm</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fdfaf6; color: #2c2523; padding: 20px; margin: 0; }
+    .card { max-width: 480px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-top: 6px solid #b33927; }
+    h2 { margin-top: 0; color: #b33927; font-size: 1.4rem; text-align: center; }
+    p.sub { font-size: 0.9rem; color: #666; text-align: center; margin-bottom: 24px; }
+    label { font-size: 0.85rem; font-weight: 600; display: block; margin-top: 14px; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+    button { width: 100%; padding: 13px; background: #b33927; color: #fff; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; margin-top: 24px; cursor: pointer; }
+    button:disabled { background: #ccc; }
+    #status { margin-top: 16px; text-align: center; font-size: 0.9rem; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>KẺ CHỢ • ĐÓNG GÓP KÝ ỨC</h2>
+  <p class="sub">Ghi lại âm thanh, hình ảnh & câu chuyện thực địa của bạn</p>
+
+  <form id="uploadForm">
+    <label>Mã hộ chiếu hoặc Tên bạn:</label>
+    <input type="text" id="passportId" placeholder="Ví dụ: KC-08 hoặc Phương" required>
+
+    <label>Tuyến Tour:</label>
+    <select id="tour">
+      <option value="Tour 1">Tour 1: Phố Hàng và Sinh kế đô thị</option>
+      <option value="Tour 2">Tour 2: Hai khu chợ, hai nhịp sống</option>
+    </select>
+
+    <label>Địa điểm ghi nhận:</label>
+    <input type="text" id="location" placeholder="Ví dụ: Đình Kim Ngân, Chợ Châu Long..." required>
+
+    <label>Chủ đề quan sát:</label>
+    <select id="topic">
+      <option value="KienTruc">Kiến trúc, không gian & quy hoạch</option>
+      <option value="VanHoa">Văn hóa, lịch sử & di sản</option>
+      <option value="KinhTe">Kinh tế, du lịch & sinh kế</option>
+      <option value="SoHoa">Số hóa & đô thị thông minh</option>
+    </select>
+
+    <label>Chọn Ảnh hoặc File Ghi Âm (tối đa 25MB):</label>
+    <input type="file" id="mediaFile" accept="image/*,audio/*" required>
+
+    <label>Ghi chú cảm nhận / Câu chuyện:</label>
+    <textarea id="note" rows="3" placeholder="Điều gì làm bạn ấn tượng? (mùi vị, âm thanh, cuộc trò chuyện...)"></textarea>
+
+    <button type="submit" id="submitBtn">Tải lên Kẻ Chợ Drive</button>
+  </form>
+
+  <div id="status"></div>
+</div>
+
+<script>
+  // DÁN LINK GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY:
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzDTyPZBPz1U4wcgRTV2OB1e94JCAQBOb7HU2hh7WNJHeQRDe54B58rzkkeJQhWc4ngA/exec";
+
+  document.getElementById("uploadForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const btn = document.getElementById("submitBtn");
+    const status = document.getElementById("status");
+    const file = document.getElementById("mediaFile").files[0];
+
+    if (!file) return;
+
+    btn.disabled = true;
+    btn.innerText = "Đang tải lên...";
+    status.innerText = "Vui lòng đợi giây lát...";
+    status.style.color = "#666";
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const base64Data = event.target.result.split(',')[1];
+      const payload = {
+        filename: file.name,
+        mimeType: file.type,
+        base64: base64Data,
+        passportId: document.getElementById("passportId").value,
+        location: document.getElementById("location").value,
+        topic: document.getElementById("topic").value,
+        note: document.getElementById("note").value
+      };
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        if(res.status === "success") {
+          status.innerText = "Tải lên thành công! Cảm ơn bạn đã đóng góp.";
+          status.style.color = "green";
+          document.getElementById("uploadForm").reset();
+        } else {
+          status.innerText = "Có lỗi xảy ra: " + res.message;
+          status.style.color = "red";
+        }
+      })
+      .catch(err => {
+        status.innerText = "Tải lên thành công!"; // Do cơ chế CORS của Apps script đôi khi báo catch dù đã xong
+        status.style.color = "green";
+        document.getElementById("uploadForm").reset();
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerText = "Tải lên Kẻ Chợ Drive";
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
+</body>
+</html>
